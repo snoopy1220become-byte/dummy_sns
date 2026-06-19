@@ -1,0 +1,1105 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>Echoes - Mobile Premium SNS</title>
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700&family=Noto+Sans+JP:wght@300;400;500;700&display=swap" rel="stylesheet">
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+  
+  <style>
+    :root {
+      --bg-color: #f3f4f6;
+      --panel-bg: rgba(255, 255, 255, 0.85);
+      --panel-border: rgba(0, 0, 0, 0.06);
+      --panel-hover-border: rgba(0, 0, 0, 0.12);
+      --accent-primary: #4f46e5;
+      --accent-primary-glow: rgba(79, 70, 229, 0.15);
+      --accent-secondary: #0ea5e9;
+      --accent-heart: #f43f5e;
+      --text-main: #1f2937;
+      --text-muted: #6b7280;
+      --text-dark: #9ca3af;
+      --glass-blur: blur(20px);
+      --font-family: 'Plus Jakarta Sans', 'Noto Sans JP', sans-serif;
+    }
+
+    html, body {
+      width: 100%;
+      height: 100%;
+      margin: 0;
+      padding: 0;
+      overflow: hidden;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      user-select: none;
+      -webkit-user-drag: none;
+    }
+
+    body {
+      background-color: var(--bg-color);
+      background-image: 
+        radial-gradient(at 0% 0%, rgba(79, 70, 229, 0.05) 0px, transparent 50%),
+        radial-gradient(at 100% 100%, rgba(14, 165, 233, 0.04) 0px, transparent 50%);
+      background-attachment: fixed;
+      color: var(--text-main);
+      font-family: var(--font-family);
+      display: flex;
+      justify-content: center;
+      align-items: stretch;
+    }
+
+    /* Screen Container */
+    .screen-content {
+      width: 100%;
+      height: 100%;
+      height: 100dvh;
+      display: flex;
+      flex-direction: column;
+      background: var(--bg-color);
+      position: relative;
+      overflow: hidden;
+    }
+
+    /* Header Nav */
+    .app-header {
+      height: calc(56px + env(safe-area-inset-top));
+      padding: env(safe-area-inset-top) 16px 0;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid var(--panel-border);
+      background: rgba(255, 255, 255, 0.8);
+      backdrop-filter: var(--glass-blur);
+      z-index: 900;
+    }
+
+    .logo-container {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .logo-icon {
+      width: 28px;
+      height: 28px;
+      background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 0 10px var(--accent-primary-glow);
+      color: #fff;
+    }
+
+    .logo-text {
+      font-size: 18px;
+      font-weight: 700;
+      letter-spacing: 0.5px;
+      background: linear-gradient(to right, var(--text-main), var(--accent-primary));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .header-action {
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      background: rgba(0, 0, 0, 0.03);
+      border: 1px solid var(--panel-border);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      color: var(--text-main);
+      transition: all 0.2s;
+    }
+
+    .header-action:hover {
+      background: rgba(0, 0, 0, 0.06);
+      border-color: var(--panel-hover-border);
+    }
+
+    /* Scroll Container with Pull to Refresh */
+    .feed-viewport {
+      flex-grow: 1;
+      overflow-y: auto;
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      /* 滑らかなスクロール (iOSライク) */
+      -webkit-overflow-scrolling: touch;
+    }
+
+    /* Pull to Refresh Indicator Container */
+    .ptr-container {
+      position: absolute;
+      top: -60px; /* Hide above the view */
+      left: 0;
+      right: 0;
+      height: 60px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      color: var(--text-muted);
+      font-size: 13px;
+      font-weight: 500;
+      pointer-events: none;
+      z-index: 10;
+      transition: transform 0.1s ease;
+    }
+
+    .ptr-content {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .ptr-icon {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: transform 0.2s ease;
+    }
+
+    .ptr-spinner {
+      display: none;
+      width: 18px;
+      height: 18px;
+      border: 2px solid rgba(0, 0, 0, 0.1);
+      border-radius: 50%;
+      border-top-color: var(--accent-primary);
+      animation: spin 0.8s linear infinite;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    /* Feed Container that gets pulled down */
+    .feed-content {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      padding: 16px;
+      transform: translateY(0);
+      /* スムーズなアニメーション戻り（ドラッグ中はJSでtransitionを無効化） */
+      transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+      will-change: transform;
+    }
+
+    /* Post Card */
+    .post-card {
+      background: var(--panel-bg);
+      backdrop-filter: var(--glass-blur);
+      border: 1px solid var(--panel-border);
+      border-radius: 18px;
+      padding: 16px;
+      box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.05);
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      animation: cardAppear 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    @keyframes cardAppear {
+      from {
+        opacity: 0;
+        transform: translateY(20px) scale(0.98);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+      }
+    }
+
+    .post-header {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .post-avatar {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      object-fit: cover;
+      border: 1px solid rgba(0, 0, 0, 0.05);
+    }
+
+    .post-user-info {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .post-user-name {
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--text-main);
+    }
+
+    .post-user-handle {
+      font-size: 11px;
+      color: var(--text-muted);
+    }
+
+    .post-time {
+      margin-left: auto;
+      font-size: 11px;
+      color: var(--text-dark);
+    }
+
+    .post-body {
+      font-size: 13.5px;
+      line-height: 1.55;
+      color: var(--text-main);
+      word-break: break-all;
+      white-space: pre-line;
+      user-select: text;
+    }
+
+    .post-body a.hashtag {
+      color: var(--accent-secondary);
+      text-decoration: none;
+      font-weight: 500;
+    }
+
+    .post-footer {
+      display: flex;
+      gap: 20px;
+      border-top: 1px solid rgba(0, 0, 0, 0.05);
+      padding-top: 10px;
+      margin-top: 4px;
+    }
+
+    .action-btn {
+      background: transparent;
+      border: none;
+      color: var(--text-muted);
+      font-size: 12px;
+      font-weight: 500;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.2s;
+    }
+
+    .action-btn:hover {
+      color: var(--text-main);
+    }
+
+    .action-btn.like-btn.liked {
+      color: var(--accent-heart);
+    }
+
+    .action-btn.like-btn.liked i {
+      fill: var(--accent-heart);
+      animation: heartBeat 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    }
+
+    @keyframes heartBeat {
+      0% { transform: scale(1); }
+      50% { transform: scale(1.3); }
+      100% { transform: scale(1); }
+    }
+
+    /* Comments Section */
+    .comments-section {
+      background: rgba(0, 0, 0, 0.03);
+      border-radius: 12px;
+      padding: 10px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .comment-item {
+      display: flex;
+      gap: 8px;
+      font-size: 12.5px;
+      line-height: 1.4;
+      padding-bottom: 8px;
+      border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+    }
+
+    .comment-item:last-child {
+      border-bottom: none;
+      padding-bottom: 0;
+    }
+
+    .comment-avatar {
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      object-fit: cover;
+    }
+
+    .comment-details {
+      flex-grow: 1;
+    }
+
+    .comment-user {
+      font-weight: 600;
+      color: var(--text-main);
+      margin-right: 4px;
+    }
+
+    .comment-text {
+      color: var(--text-main);
+      user-select: text;
+    }
+
+    /* Comment Form */
+    .comment-form {
+      display: flex;
+      gap: 8px;
+      margin-top: 4px;
+    }
+
+    .comment-input {
+      flex-grow: 1;
+      background: rgba(0, 0, 0, 0.02);
+      border: 1px solid var(--panel-border);
+      border-radius: 99px;
+      padding: 6px 12px;
+      color: var(--text-main);
+      font-size: 12px;
+      outline: none;
+    }
+
+    .comment-input:focus {
+      border-color: var(--accent-primary);
+    }
+
+    .comment-submit {
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      background: var(--accent-primary);
+      border: none;
+      color: #fff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+    }
+
+    /* Navigation Bar (Bottom) */
+    .bottom-nav {
+      height: calc(64px + env(safe-area-inset-bottom));
+      border-top: 1px solid var(--panel-border);
+      background: rgba(255, 255, 255, 0.85);
+      backdrop-filter: var(--glass-blur);
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      align-items: center;
+      justify-items: center;
+      z-index: 900;
+      padding-bottom: calc(8px + env(safe-area-inset-bottom)); /* Safe area space */
+    }
+
+    .nav-item {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+      color: var(--text-muted);
+      font-size: 10px;
+      font-weight: 600;
+      cursor: pointer;
+      width: 100%;
+      height: 100%;
+      justify-content: center;
+      transition: color 0.2s;
+    }
+
+    .nav-item.active {
+      color: var(--accent-primary);
+    }
+
+    /* Quick Post Modal Button */
+    .fab-post {
+      position: absolute;
+      bottom: 80px;
+      right: 20px;
+      width: 50px;
+      height: 50px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
+      color: #fff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 8px 16px rgba(99, 102, 241, 0.4);
+      cursor: pointer;
+      z-index: 800;
+      transition: transform 0.2s;
+    }
+
+    .fab-post:hover {
+      transform: scale(1.05) rotate(90deg);
+    }
+
+    /* Post Modal Panel */
+    .post-modal {
+      position: absolute;
+      inset: 0;
+      background: rgba(255, 255, 255, 0.95);
+      backdrop-filter: blur(10px);
+      z-index: 1100;
+      display: flex;
+      flex-direction: column;
+      padding: calc(24px + env(safe-area-inset-top)) 20px 20px;
+      transform: translateY(100%);
+      transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .post-modal.open {
+      transform: translateY(0);
+    }
+
+    .modal-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 24px;
+    }
+
+    .modal-title {
+      font-size: 18px;
+      font-weight: 700;
+    }
+
+    .modal-close {
+      color: var(--text-muted);
+      cursor: pointer;
+    }
+
+    .modal-user-selector {
+      display: flex;
+      gap: 12px;
+      margin-bottom: 16px;
+      overflow-x: auto;
+      padding-bottom: 8px;
+    }
+
+    .selector-avatar {
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      border: 2px solid transparent;
+      cursor: pointer;
+      opacity: 0.6;
+      transition: all 0.2s;
+    }
+
+    .selector-avatar.selected {
+      border-color: var(--accent-primary);
+      opacity: 1;
+      transform: scale(1.1);
+    }
+
+    .modal-textarea {
+      flex-grow: 1;
+      background: transparent;
+      border: none;
+      color: var(--text-main);
+      font-family: var(--font-family);
+      font-size: 16px;
+      resize: none;
+      outline: none;
+    }
+
+    .modal-footer {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-top: 1px solid var(--panel-border);
+      padding-top: 16px;
+    }
+
+    .modal-btn-submit {
+      background: var(--accent-primary);
+      border: none;
+      color: #fff;
+      padding: 10px 24px;
+      border-radius: 99px;
+      font-weight: 600;
+      font-size: 14px;
+      cursor: pointer;
+    }
+
+    /* Notification overlay */
+    .toast {
+      position: absolute;
+      top: 80px;
+      left: 50%;
+      transform: translateX(-50%) translateY(-20px);
+      background: rgba(16, 185, 129, 0.9);
+      color: #fff;
+      padding: 8px 16px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: 600;
+      z-index: 2000;
+      opacity: 0;
+      pointer-events: none;
+      transition: all 0.3s ease;
+      box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+    }
+
+    .toast.show {
+      opacity: 1;
+      transform: translateX(-50%) translateY(0);
+    }
+
+    /* Mobile Responsive tweaks - removed mockup styling since it's full screen by default */
+  </style>
+</head>
+<body>
+
+  <!-- Screen -->
+  <div class="screen-content">
+    
+    <!-- App Header -->
+    <header class="app-header">
+      <div class="logo-container">
+        <div class="logo-icon">
+          <i data-lucide="zap" style="width: 16px; height: 16px;"></i>
+        </div>
+        <span class="logo-text">Echoes</span>
+      </div>
+      <div class="header-action" onclick="toggleModal(true)">
+        <i data-lucide="plus" style="width: 20px; height: 20px;"></i>
+      </div>
+    </header>
+
+    <!-- Toast Notification -->
+    <div id="toast" class="toast">新しいエコーを受信しました</div>
+
+    <!-- Scrollable Feed Viewport -->
+    <div class="feed-viewport" id="feedViewport">
+      
+      <!-- Pull to Refresh Visual Indicator -->
+      <div class="ptr-container" id="ptrContainer">
+        <div class="ptr-content">
+          <span class="ptr-icon" id="ptrIcon">
+            <i data-lucide="arrow-down" style="width: 18px; height: 18px;"></i>
+          </span>
+          <div class="ptr-spinner" id="ptrSpinner"></div>
+          <span id="ptrText">下に引っ張って更新</span>
+        </div>
+      </div>
+
+      <!-- Feed List (pulled down by CSS transform) -->
+      <div class="feed-content" id="feedContent">
+        <!-- 投稿カードリストはJavaScriptでレンダリングされます -->
+      </div>
+
+    </div>
+
+    <!-- Float Action Button -->
+    <div class="fab-post" onclick="toggleModal(true)">
+      <i data-lucide="edit-3" style="width: 20px; height: 20px;"></i>
+    </div>
+
+    <!-- Bottom Nav Bar -->
+    <nav class="bottom-nav">
+      <div class="nav-item active">
+        <i data-lucide="home" style="width: 20px; height: 20px;"></i>
+        <span>フィード</span>
+      </div>
+      <div class="nav-item">
+        <i data-lucide="search" style="width: 20px; height: 20px;"></i>
+        <span>見つける</span>
+      </div>
+      <div class="nav-item">
+        <i data-lucide="bell" style="width: 20px; height: 20px;"></i>
+        <span>通知</span>
+      </div>
+      <div class="nav-item">
+        <i data-lucide="user" style="width: 20px; height: 20px;"></i>
+        <span>プロフ</span>
+      </div>
+    </nav>
+
+    <!-- Post Creation Modal Sheet -->
+    <div class="post-modal" id="postModal">
+      <div class="modal-header">
+        <span class="modal-title">エコーを作成</span>
+        <div class="modal-close" onclick="toggleModal(false)">
+          <i data-lucide="x" style="width: 24px; height: 24px;"></i>
+        </div>
+      </div>
+
+      <div style="font-size: 12px; color: var(--text-muted); margin-bottom: 8px;">投稿者を選択:</div>
+      <div class="modal-user-selector" id="modalUserSelector">
+        <!-- JSでレンダリング -->
+      </div>
+
+      <textarea 
+        id="modalTextarea" 
+        class="modal-textarea" 
+        placeholder="今考えていることをエコーしよう..."
+        maxlength="200"
+      ></textarea>
+
+      <div class="modal-footer">
+        <span id="modalCharCount" style="font-size: 12px; color: var(--text-dark);">0 / 200</span>
+        <button class="modal-btn-submit" onclick="submitModalPost()">エコーする</button>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Database & Logic Script -->
+  <script>
+    // サンプルユーザーデータ
+    const USERS = [
+      {
+        id: 'user_1',
+        name: 'シノハラ・レイ',
+        handle: '@ray_shino',
+        avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&auto=format&fit=crop&q=80'
+      },
+      {
+        id: 'user_2',
+        name: 'タカハシ・コウキ',
+        handle: '@koki_taka',
+        avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&auto=format&fit=crop&q=80'
+      },
+      {
+        id: 'user_3',
+        name: 'ミナミ・サクラ',
+        handle: '@sakura_m',
+        avatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=100&auto=format&fit=crop&q=80'
+      }
+    ];
+
+    // サンプル初期投稿
+    let posts = [
+      {
+        id: 'post_1',
+        userId: 'user_1',
+        content: '開発中のSNSアプリに「引っ張ってリロード(Pull to Refresh)」機能を実装しました！モバイルでの手触りが一気に向上しますね。📱✨ #UX #開発',
+        timestamp: new Date(Date.now() - 3600000 * 0.5).toISOString(), // 30分前
+        likes: 15,
+        likedBy: [],
+        comments: [
+          {
+            id: 'c_1',
+            username: 'タカハシ・コウキ',
+            content: 'めちゃくちゃ反応がいいですね！スクロール感もスムーズです。'
+          }
+        ]
+      },
+      {
+        id: 'post_2',
+        userId: 'user_2',
+        content: '今日は朝からお気に入りのカフェでノマドワーク。集中していいコードがたくさん書けました！☕️💻 #エンジニアの日常',
+        timestamp: new Date(Date.now() - 3600000 * 3).toISOString(), // 3時間前
+        likes: 8,
+        likedBy: [],
+        comments: []
+      },
+      {
+        id: 'post_3',
+        userId: 'user_3',
+        content: '新しく描いたイラストのカラーパレットを調整中。パステルカラーの組み合わせって見ているだけで癒されますね。🎨🌸 #Illustration #Design',
+        timestamp: new Date(Date.now() - 3600000 * 6).toISOString(), // 6時間前
+        likes: 27,
+        likedBy: [],
+        comments: []
+      }
+    ];
+
+    let selectedUserId = 'user_1';
+
+    // アプリ起動時のイニシャライズ
+    document.addEventListener("DOMContentLoaded", () => {
+      renderFeed();
+      renderUserSelector();
+      initPullToRefresh();
+      initModalCounter();
+      lucide.createIcons();
+    });
+
+    // フィードの描画
+    function renderFeed() {
+      const feedContainer = document.getElementById("feedContent");
+      feedContainer.innerHTML = "";
+
+      posts.forEach(post => {
+        const user = USERS.find(u => u.id === post.userId) || USERS[0];
+        const isLiked = post.likedBy.includes(selectedUserId);
+        const card = document.createElement("article");
+        card.className = "post-card";
+        
+        card.innerHTML = `
+          <div class="post-header">
+            <img class="post-avatar" src="${user.avatar}" alt="${user.name}">
+            <div class="post-user-info">
+              <span class="post-user-name">${user.name}</span>
+              <span class="post-user-handle">${user.handle}</span>
+            </div>
+            <span class="post-time">${formatTimeAgo(post.timestamp)}</span>
+          </div>
+          <div class="post-body">${parseHashtags(post.content)}</div>
+          <div class="post-footer">
+            <button class="action-btn like-btn ${isLiked ? 'liked' : ''}" onclick="toggleLike('${post.id}')">
+              <i data-lucide="heart" style="width: 15px; height: 15px;"></i>
+              <span>${post.likes}</span>
+            </button>
+            <button class="action-btn" onclick="focusCommentInput('${post.id}')">
+              <i data-lucide="message-square" style="width: 15px; height: 15px;"></i>
+              <span>${post.comments.length}</span>
+            </button>
+          </div>
+          
+          <!-- Comments area -->
+          <div class="comments-section">
+            <div class="comments-list">
+              ${post.comments.map(c => `
+                <div class="comment-item">
+                  <div class="comment-details">
+                    <span class="comment-user">${c.username}</span>
+                    <span class="comment-text">${c.content}</span>
+                  </div>
+                </div>
+              `).join('')}
+            </div>
+            <div class="comment-form">
+              <input type="text" class="comment-input" id="comment-input-${post.id}" placeholder="コメントを追加..." onkeydown="handleCommentEnter(event, '${post.id}')">
+              <button class="comment-submit" onclick="submitComment('${post.id}')">
+                <i data-lucide="arrow-up" style="width: 12px; height: 12px;"></i>
+              </button>
+            </div>
+          </div>
+        `;
+        feedContainer.appendChild(card);
+      });
+      lucide.createIcons();
+    }
+
+    // コメント入力のEnterキー監視
+    function handleCommentEnter(e, postId) {
+      if (e.key === 'Enter') {
+        submitComment(postId);
+      }
+    }
+
+    // コメント追加
+    function submitComment(postId) {
+      const input = document.getElementById(`comment-input-${postId}`);
+      const text = input.value.trim();
+      if (!text) return;
+
+      const post = posts.find(p => p.id === postId);
+      const activeUser = USERS.find(u => u.id === selectedUserId);
+      if (post && activeUser) {
+        post.comments.push({
+          id: 'c_' + Date.now(),
+          username: activeUser.name,
+          content: text
+        });
+        input.value = "";
+        renderFeed();
+      }
+    }
+
+    function focusCommentInput(postId) {
+      document.getElementById(`comment-input-${postId}`).focus();
+    }
+
+    // いいねのトグル
+    function toggleLike(postId) {
+      const post = posts.find(p => p.id === postId);
+      if (!post) return;
+
+      const idx = post.likedBy.indexOf(selectedUserId);
+      if (idx === -1) {
+        post.likedBy.push(selectedUserId);
+        post.likes++;
+      } else {
+        post.likedBy.splice(idx, 1);
+        post.likes--;
+      }
+      renderFeed();
+    }
+
+    // 新規投稿モーダルの表示・非表示
+    function toggleModal(show) {
+      const modal = document.getElementById("postModal");
+      if (show) {
+        modal.classList.add("open");
+        document.getElementById("modalTextarea").focus();
+      } else {
+        modal.classList.remove("open");
+        document.getElementById("modalTextarea").value = "";
+        document.getElementById("modalCharCount").innerText = "0 / 200";
+      }
+    }
+
+    // モーダルの文字数カウント
+    function initModalCounter() {
+      const textarea = document.getElementById("modalTextarea");
+      const counter = document.getElementById("modalCharCount");
+      textarea.addEventListener("input", () => {
+        counter.innerText = `${textarea.value.length} / 200`;
+      });
+    }
+
+    // モーダルでの投稿選択アバターの描画
+    function renderUserSelector() {
+      const selector = document.getElementById("modalUserSelector");
+      selector.innerHTML = "";
+      USERS.forEach(user => {
+        const img = document.createElement("img");
+        img.className = `selector-avatar ${user.id === selectedUserId ? 'selected' : ''}`;
+        img.src = user.avatar;
+        img.alt = user.name;
+        img.title = user.name;
+        img.onclick = () => {
+          document.querySelectorAll(".selector-avatar").forEach(el => el.classList.remove("selected"));
+          img.classList.add("selected");
+          selectedUserId = user.id;
+          renderFeed(); // アクティブユーザーに応じた「いいね！」状態を再読み込み
+        };
+        selector.appendChild(img);
+      });
+    }
+
+    // モーダルからの新規投稿
+    function submitModalPost() {
+      const textarea = document.getElementById("modalTextarea");
+      const content = textarea.value.trim();
+      if (!content) return;
+
+      const newPost = {
+        id: 'post_' + Date.now(),
+        userId: selectedUserId,
+        content: content,
+        timestamp: new Date().toISOString(),
+        likes: 0,
+        likedBy: [],
+        comments: []
+      };
+
+      posts.unshift(newPost);
+      toggleModal(false);
+      renderFeed();
+      showToast("新しいエコーを送信しました");
+    }
+
+    // トースト通知の表示
+    function showToast(message) {
+      const toast = document.getElementById("toast");
+      toast.innerText = message;
+      toast.classList.add("show");
+      setTimeout(() => {
+        toast.classList.remove("show");
+      }, 2500);
+    }
+
+    /* ==========================================
+       PULL TO REFRESH (引っ張って更新) のロジック
+       ========================================== */
+    function initPullToRefresh() {
+      const viewport = document.getElementById("feedViewport");
+      const content = document.getElementById("feedContent");
+      const ptrContainer = document.getElementById("ptrContainer");
+      const ptrIcon = document.getElementById("ptrIcon");
+      const ptrSpinner = document.getElementById("ptrSpinner");
+      const ptrText = document.getElementById("ptrText");
+
+      let startY = 0;
+      let currentY = 0;
+      let pullDistance = 0;
+      let isDragging = false;
+      let isRefreshing = false;
+
+      const THRESHOLD = 65; // リフレッシュを実行する引っ張り距離の閾値(px)
+      const MAX_PULL = 100;  // 最大引っ張り距離のキャップ(px)
+
+      // ドラッグ開始
+      function dragStart(e) {
+        // スクロール位置が一番上にある時だけ有効化
+        if (viewport.scrollTop !== 0 || isRefreshing) return;
+
+        isDragging = true;
+        startY = e.pageY || e.touches[0].pageY;
+        
+        // ドラッグ開始時にアニメーション遷移をクリアして指の動きに追従させる
+        content.style.transition = 'none';
+        ptrContainer.style.transition = 'none';
+      }
+
+      // ドラッグ中
+      function dragMove(e) {
+        if (!isDragging) return;
+
+        currentY = e.pageY || e.touches[0].pageY;
+        const diff = currentY - startY;
+
+        // 下方向に引っ張っている場合のみ処理
+        if (diff > 0) {
+          // モバイルのデフォルトのバウンススクロール挙動を制限
+          if (e.cancelable) e.preventDefault();
+
+          // 抵抗値を加えたプルシミュレーション (数式: sqrt / logなどで引っ張るほど重くする)
+          // 2次曲線的に引っ張りを抑制する
+          pullDistance = Math.min(MAX_PULL, Math.pow(diff, 0.85));
+
+          // フィードコンテンツとインジケータを引っ張る
+          content.style.transform = `translateY(${pullDistance}px)`;
+          ptrContainer.style.transform = `translateY(${pullDistance}px)`;
+
+          // 矢印アイコンの回転（閾値に近づくにつれて回転する）
+          const rotation = Math.min(180, (pullDistance / THRESHOLD) * 180);
+          ptrIcon.style.transform = `rotate(${rotation}deg)`;
+
+          // テキストと状態の更新
+          if (pullDistance >= THRESHOLD) {
+            ptrText.innerText = "指を離して更新";
+          } else {
+            ptrText.innerText = "下に引っ張って更新";
+          }
+        }
+      }
+
+      // ドラッグ終了
+      function dragEnd() {
+        if (!isDragging) return;
+        isDragging = false;
+
+        // トランジション（スナップバック）を有効化
+        content.style.transition = 'transform 0.4s cubic-bezier(0.16, 1, 0.3, 1)';
+        ptrContainer.style.transition = 'transform 0.4s cubic-bezier(0.16, 1, 0.3, 1)';
+
+        if (pullDistance >= THRESHOLD) {
+          // リフレッシュ実行処理
+          triggerRefresh();
+        } else {
+          // 元の位置に戻す
+          content.style.transform = 'translateY(0)';
+          ptrContainer.style.transform = 'translateY(0)';
+        }
+        pullDistance = 0;
+      }
+
+      // リフレッシュのトリガー実行
+      function triggerRefresh() {
+        isRefreshing = true;
+        
+        // リフレッシュ中の位置に固定 (60px)
+        content.style.transform = `translateY(${THRESHOLD}px)`;
+        ptrContainer.style.transform = `translateY(${THRESHOLD}px)`;
+
+        // 表示の切り替え
+        ptrIcon.style.display = "none";
+        ptrSpinner.style.display = "block";
+        ptrText.innerText = "更新中...";
+
+        // 1.5秒後に新規データをモックで追加して完了とする
+        setTimeout(() => {
+          simulateNewPostOnRefresh();
+          
+          // 元の位置に戻す
+          content.style.transform = 'translateY(0)';
+          ptrContainer.style.transform = 'translateY(0)';
+          
+          // トランジション終了後に表示状態をリセット
+          setTimeout(() => {
+            ptrIcon.style.display = "flex";
+            ptrIcon.style.transform = "rotate(0deg)";
+            ptrSpinner.style.display = "none";
+            ptrText.innerText = "下に引っ張って更新";
+            isRefreshing = false;
+          }, 400);
+
+        }, 1500);
+      }
+
+      // 更新時にランダムな新規投稿をシミュレート挿入
+      function simulateNewPostOnRefresh() {
+        const randomSentences = [
+          "朝の散歩中に可愛い野良猫を発見！じっと見つめ合ってしまいました。🐈🌿 #ほのぼの #猫",
+          "GASのdoGetで動作するこのシステム、Webアプリケーションとしての拡張性が本当に素晴らしいですね。🚀",
+          "新しいプロジェクトの企画書を作成中。ワクワクするアイデアが形になっていく瞬間が一番楽しい！📊🔥 #ビジネス #クリエイティブ",
+          "美味しいラーメンを食べに来ました！スープが濃厚でチャーシューもトロトロ。最高です。🍜✨ #飯テロ #ラーメン"
+        ];
+        
+        const randomUser = USERS[Math.floor(Math.random() * USERS.length)];
+        const randomText = randomSentences[Math.floor(Math.random() * randomSentences.length)];
+
+        // すでに同じ内容があればスキップ
+        if (posts.some(p => p.content === randomText)) {
+          showToast("最新のタイムラインです");
+          return;
+        }
+
+        const newPost = {
+          id: 'post_ref_' + Date.now(),
+          userId: randomUser.id,
+          content: randomText,
+          timestamp: new Date().toISOString(),
+          likes: 0,
+          likedBy: [],
+          comments: []
+        };
+
+        posts.unshift(newPost);
+        renderFeed();
+        showToast("タイムラインを更新しました");
+      }
+
+      // マウス及びタッチイベントリスナー
+      viewport.addEventListener("touchstart", dragStart, { passive: true });
+      viewport.addEventListener("touchmove", dragMove, { passive: false });
+      viewport.addEventListener("touchend", dragEnd);
+
+      // PC上のマウスドラッグによるシミュレートサポート
+      viewport.addEventListener("mousedown", dragStart);
+      window.addEventListener("mousemove", dragMove);
+      window.addEventListener("mouseup", dragEnd);
+    }
+
+    // ハッシュタグパーサー（#ハッシュタグ を検出してリンクに置き換える）
+    function parseHashtags(text) {
+      if (!text) return "";
+      return text.replace(/#([A-Za-z0-9_ぁ-んァ-ヶ亜-熙々ー]+)/g, (match, tag) => {
+        return `<a href="#" class="hashtag" onclick="event.preventDefault(); alert('#${tag} で検索します（モック）')">#${tag}</a>`;
+      });
+    }
+
+    // 時刻の「〜前」表記変換
+    function formatTimeAgo(isoString) {
+      const date = new Date(isoString);
+      const now = new Date();
+      const diffMs = now - date;
+      const diffMins = Math.floor(diffMs / 60000);
+      const diffHours = Math.floor(diffMins / 60);
+      
+      if (diffMins < 1) {
+        return "今すぐ";
+      } else if (diffMins < 60) {
+        return `${diffMins}分前`;
+      } else if (diffHours < 24) {
+        return `${diffHours}時間前`;
+      } else {
+        const days = Math.floor(diffHours / 24);
+        return `${days}日前`;
+      }
+    }
+  </script>
+</body>
+</html>
